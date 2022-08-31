@@ -1,0 +1,116 @@
+# Training
+Train:
+  # Training epochs
+  Epoch: 100
+  # Learning rate
+  LR: 1e-5
+  # Weight Decay
+  WeightDecay: 1e-4
+  # Loss, loss is in ['Count', 'Density', 'Combine']
+  Loss: Count
+
+# Model
+Model:
+  # Encoder
+  Encoder: TransformerEncoder
+  # Aggregator
+  RegressionHead: AdaptRegressionHead
+
+# Dataset
+Dataset:
+  # Dataset Name
+  Name: CaraDataset
+  # Path to the split json file
+  Train_val_split_path: './Train_val_split.json'
+  # Root dir
+  Root_dir: '/home/yifeng/SignalCounting'
+  # Step size of the slide window
+  Step_size: 5
+  # Max length
+  Max_len: 6000
+  # Window size for each token
+  Window_size: 10
+  # If generate the density map
+  Density_map: False
+  # Length of density map
+  Density_map_length: 128
+  # Data augmentation
+  Augmentation: False
+  # Multi scale sampling
+  Multi: False
+
+
+# Setting of TransformerEncoder
+TransformerEncoder:
+  # Feat_dim will not be used, since the input feature dim depends on the window_size
+  feat_dim: 60
+  # Max window num
+  max_len: 6000
+  # Intermediate dim
+  inter_dim: 96
+  # Head num of attention
+  head_num: 4
+  # Layer num of the encoder
+  layers_num: 1
+  # Dropout rate
+  dropout: 0.1
+  # If freeze, drop out is set to zero
+  freeze: False
+  # Activate function
+  activation: gelu
+
+MultiTransformerEncoder:
+  # Feat_dim will not be used, since the input feature dim depends on the window_size
+  feat_dim: 60
+  # Max window num
+  max_len: 6000
+  # Intermediate dim
+  inter_dim: 128
+  # Head num of attention
+  head_num: 8
+  # Layer num of the encoder
+  layers_num: 2
+  # Dropout rate
+  dropout: 0.1
+  # If freeze, drop out is set to zero
+  freeze: False
+  # Activate function
+  activation: gelu
+
+# A simple MLP with a adaptive pooling layer
+AdaptRegressionHead:
+  # Length after pooling
+  pool_len: 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim: [ 512, 256 ]
+  # Activation
+  act: relu
+
+AdaptConvRegressionHead:
+  # Length after pooling
+  pool_len: 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim: [ 512, 256 ]
+  # Activation
+  act: relu
+  # Conv out dim
+  conv_out_dim: 128
+
+MultiAdaptConvRegressionHead:
+  # Length after pooling
+  pool_len: 128
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim: [ 512, 32 ]
+
+# A simple MLP with a adaptive pooling layer
+DensityAdaptRegressionHead:
+  # Length after pooling
+  pool_len : 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim : [ 512, 256 ]
+
+GPUID: 0
+
+# Final Result
+# MAE:
+# RMSE:

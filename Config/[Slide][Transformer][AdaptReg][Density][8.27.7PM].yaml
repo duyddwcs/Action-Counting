@@ -1,0 +1,97 @@
+# Training
+Train:
+  # Training epochs
+  Epoch: 50
+  # Learning rate
+  LR: 1e-5
+  # Weight Decay
+  WeightDecay: 1e-4
+
+# Model
+Model:
+  # Encoder
+  Encoder: TransformerEncoder
+  # Aggregator
+  RegressionHead: DensityAdaptRegressionHead
+
+# Dataset
+Dataset:
+  # Dataset Name
+  Name: DensitySlideCaraDataset
+  # Window size for each token
+  Windowsize: 10
+  # Path to the split json file
+  Train_val_split_path: './Train_val_split.json'
+  # Step size of the slide window
+  Step_size: 5
+  # Max length
+  Max_len: 6000
+
+# Setting of TransformerEncoder
+TransformerEncoder:
+  # Feat_dim will not be used, since the input feature dim depends on the window_size
+  feat_dim: 60
+  # Max window num
+  max_len: 6000
+  # Intermediate dim
+  inter_dim: 96
+  # Head num of attention
+  head_num: 4
+  # Layer num of the encoder
+  layers_num: 1
+  # Dropout rate
+  dropout: 0.1
+  # If freeze, drop out is set to zero
+  freeze: False
+  # Activate function
+  activation: gelu
+
+MultiTransformerEncoder:
+  # Feat_dim will not be used, since the input feature dim depends on the window_size
+  feat_dim: 60
+  # Max window num
+  max_len: 6000
+  # Intermediate dim
+  inter_dim: 128
+  # Head num of attention
+  head_num: 8
+  # Layer num of the encoder
+  layers_num: 2
+  # Dropout rate
+  dropout: 0.1
+  # If freeze, drop out is set to zero
+  freeze: False
+  # Activate function
+  activation: gelu
+
+# A simple MLP with a adaptive pooling layer
+AdaptRegressionHead:
+  # Length after pooling
+  pool_len : 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim : [512, 32]
+
+AdaptConvRegressionHead:
+  # Length after pooling
+  pool_len: 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim: [ 512, 32 ]
+
+MultiAdaptConvRegressionHead:
+  # Length after pooling
+  pool_len: 128
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim: [ 512, 32 ]
+
+# A simple MLP with a adaptive pooling layer
+DensityAdaptRegressionHead:
+  # Length after pooling
+  pool_len : 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim : [ 512, 256 ]
+
+GPUID: 7
+
+# Final Result
+# MAE:
+# RMSE:

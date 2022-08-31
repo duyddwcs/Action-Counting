@@ -1,0 +1,52 @@
+# Training
+Train:
+  # Training epochs
+  Epoch: 50
+  # Learning rate
+  LR: 5.0e-06
+
+# Model
+Model:
+  # Encoder
+  Encoder: TransformerEncoder
+  # Aggregator
+  RegressionHead: AdaptConvRegressionHead
+
+# Dataset
+Dataset:
+  # Dataset Name
+  Name: CaraDataset
+  # Window size for each token
+  WindowSize: 10
+
+# Setting of TransformerEncoder
+TransformerEncoder:
+  # Feat_dim will not be used, since the input feature dim depends on the window_size
+  feat_dim: 60
+  # Max window num
+  max_len: 3000
+  # Intermediate dim
+  inter_dim: 96
+  # Head num of attention
+  head_num: 4
+  # Layer num of the encoder
+  layers_num: 1
+  # Dropout rate
+  dropout: 0.1
+  # If freeze, drop out is set to zero
+  freeze: False
+  # Activate function
+  activation: gelu
+
+# A simple MLP with a adaptive pooling layer
+AdaptRegressionHead:
+  # Length after pooling
+  pool_len : 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim : [512, 32]
+
+AdaptConvRegressionHead:
+  # Length after pooling
+  pool_len: 96
+  # Dim of the following mlp(Has to be a list)
+  mlp_dim: [ 512, 32 ]
