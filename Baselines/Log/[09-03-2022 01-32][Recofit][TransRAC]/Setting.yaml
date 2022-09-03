@@ -1,0 +1,108 @@
+Train:
+  Epoch: 25
+  LR: 1.0e-06
+  WeightDecay: 1.0e-05
+  Loss: Count
+Val:
+  Adaptation: false
+Model: TransRAC
+Dataset: RecofitDataset
+CARA:
+  Train_val_split_path: ./CARA/Train_val_split.json
+  Root_dir: /home/yifeng/CHI2023
+  Step_size:
+  - 5
+  Max_len: 6000
+  Window_size:
+  - 10
+  Density_map: false
+  Density_map_length: 128
+  Multi: false
+MMFit:
+  Train_val_split_path: ./MMFit/Train_val_split.json
+  Root_dir: /home/yifeng/CHI2023
+  Step_size:
+  - 5
+  Max_len: 1600
+  Window_size:
+  - 10
+  Density_map: false
+  Density_map_length: 128
+  Multi: false
+Recofit:
+  Train_val_split_path: ./Recofit/Train_val_split.json
+  Root_dir: /home/yifeng/CHI2023
+  Step_size:
+  - 5
+  - 10
+  - 15
+  Max_len: 1200
+  Window_size:
+  - 10
+  - 20
+  - 30
+  Density_map: false
+  Density_map_length: 128
+  Multi: false
+Crossfit:
+  Train_val_split_path: ./Crossfit/Train_val_split.json
+  Root_dir: /home/yifeng/CHI2023
+  Step_size:
+  - 5
+  Max_len: 500
+  Window_size:
+  - 10
+  Density_map: false
+  Density_map_length: 128
+  Multi: false
+Weakcounter:
+  Train_val_split_path: ./Weakcounter/Train_val_split.json
+  Root_dir: /home/yifeng/CHI2023
+  Step_size:
+  - 5
+  Max_len: 1200
+  Window_size:
+  - 10
+  Density_map: false
+  Density_map_length: 128
+  Multi: false
+TransformerEncoder:
+  feat_dim:
+  - 60
+  - 120
+  - 180
+  max_len: 1600
+  inter_dim: 128
+  head_num: 4
+  layers_num: 1
+  dropout: 0.1
+  freeze: false
+  activation: gelu
+MultiTransformerEncoder:
+  feat_dim:
+  - 60
+  max_len: 1600
+  inter_dim: 96
+  head_num: 4
+  layers_num: 1
+  dropout: 0.1
+  freeze: false
+  activation: gelu
+AdaptRegressionHead:
+  pool_len: 96
+  mlp_dim:
+  - 512
+  - 32
+  act: relu
+GPUID: 7
+Seed: 5
+TransRACRegressionHead:
+  pool_len: 96
+  mlp_dim:
+  - 512
+  - 32
+  act: relu
+  transformer_head: 8
+  transformer_dim: 512
+  transformer_layer_num: 1
+  conv_out_dim: 4
