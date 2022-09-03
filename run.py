@@ -15,7 +15,7 @@ from config import get_default_cfg, merge_from_file, show_cfg, save_cfg
 warnings.simplefilter("ignore", UserWarning)
 
 # Experiment config
-exp_name = '[Cara][Transformer][SimiReg][Density][NoAdaptation][8.30.1AM]'
+exp_name = '[Recofit][TransRAC]'
 exp_setting_path = './Config/' + exp_name +'.yaml'
 log_root = './Log'
 current_time = datetime.datetime.now()
@@ -60,17 +60,16 @@ model = build_model(cfg)
 model.cuda()
 
 optimizer = torch.optim.AdamW(model.parameters(), lr=LR, weight_decay = weight_decay)
-scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
 loss = 0
 
 # print('Training samples:', len(train_loader))
 print(exp_name)
+print('Large window size: 30')
 for epoch in range(Epoch):
     #print('####################################')
     Result[epoch + 1] = {}
     Result[epoch + 1]['train'] = {}
     Result[epoch + 1]['val'] = {}
-    Result[epoch + 1]['LR'] = {}
     model.train()
     print('#################################################################')
     print('Epoch:', epoch)
@@ -81,49 +80,21 @@ for epoch in range(Epoch):
     RM_error_list = []
     for idx, data in enumerate(train_loader):
 
-        if cfg.Dataset.Name == 'CaraDataset':
-            if cfg.Dataset.Density_map:
-                query_t, query_count, density, exemplar_t, exemplar_count, exemplar_density = data
-                query_t = query_t.cuda()
-                density = density.cuda()
-            else:
-                query_t, query_count, exemplar_t, exemplar_count = data
-                query_t = query_t.cuda()
-
-        elif cfg.Dataset.Name == 'MultiCaraDataset':
-            if cfg.Dataset.Density_map:
-                query_t, query_count, density = data
-                density = density.cuda()
-            else:
-                query_t, query_count = data
-
-        pred_density = model(query_t)
-        # loss and update
-
-        count = pred_density.sum()
-
+        query_t, query_count, query_density, exemplar_t, exemplar_count, exemplar_density = data
+        #print(query_count)
+        #print(exemplar_count)
+        # print(query_t[0].shape)
+        pred_count = model(query_t)
         query_count = torch.tensor(query_count).cuda()
-        error = np.absolute((count - query_count).detach().cpu().numpy())
-        # print(error)
+        error = np.absolute((pred_count - query_count).detach().cpu().numpy())
+
         # MAE
         error_list.append(error)
         # RMSE
         RM_error_list.append(error ** 2)
-
-
-
-        if cfg.Train.Loss == 'Density':
-            loss = loss + ((pred_density - density) ** 2).sum()
-            density_reg_loss = ((pred_density - density) ** 2).sum()
-            density_regloss_list.append(density_reg_loss.detach().cpu().numpy())
-        elif cfg.Train.Loss == 'Combine':
-            loss = loss + (count - query_count) ** 2 + 20 * (((pred_density - density) ** 2).sum())
-            density_reg_loss = ((pred_density - density) ** 2).sum()
-            density_regloss_list.append(density_reg_loss.detach().cpu().numpy())
-            coung_regloss_list.append(error ** 2)
-        else:
-            loss = loss + (count - query_count) ** 2
-            coung_regloss_list.append(error ** 2)
+        # Calculate loss
+        loss = loss + (pred_count - query_count) ** 2
+        coung_regloss_list.append(error ** 2)
         # loss = loss + ((pred_density - density) ** 2).sum()
 
         if (idx + 1) % 16 == 0 or (idx + 1) == len(train_loader):
@@ -154,9 +125,8 @@ for epoch in range(Epoch):
     TBwriter.add_scalar('train/RMSE', train_rmse, epoch + 1)
     TBwriter.add_scalar('train/Count loss', train_count_loss, epoch + 1)
     TBwriter.add_scalar('train/Density loss', train_density_loss, epoch + 1)
-    Result[epoch + 1]['train']['MAE'] = train_mae
-    Result[epoch + 1]['train']['RMSE'] = train_rmse
-    Result[epoch + 1]['train']['Total Loss'] = train_count_loss + train_density_loss
+    Result[epoch + 1]['train']['MAE'] = float(train_mae[0])
+    Result[epoch + 1]['train']['RMSE'] = float(train_rmse[0])
 
     #Evaluate
     model.eval()
@@ -165,38 +135,13 @@ for epoch in range(Epoch):
     val_RM_error_list = []
     for idx, data in enumerate(val_loader):
 
-        if cfg.Dataset.Name == 'CaraDataset':
-            if cfg.Dataset.Density_map:
-                query_t, query_count, _, exemplar_t, exemplar_count, exemplar_density = data
-                query_t = query_t.cuda()
-                exemplar_t = exemplar_t.cuda()
-                exemplar_density = exemplar_density.cuda()
-            else:
-                query_t, query_count = data
-                query_t = query_t.cuda()
-
-        elif cfg.Dataset.Name == 'MultiCaraDataset':
-            if cfg.Dataset.Density_map:
-                query_t, query_count, _ = data
-            else:
-                query_t, query_count = data
-
-
-        if cfg.Val.Adaptation:
-            ada_model = copy.deepcopy(model)
-            ada_optimizer = torch.optim.AdamW(ada_model.parameters(), lr=1e-6)
-            for i in range(10):
-                pred_exemplar_density = ada_model(exemplar_t)
-                ada_loss = ((pred_exemplar_density - exemplar_density) ** 2).sum()
-                ada_optimizer.zero_grad()
-                ada_loss.backward()
-                ada_optimizer.step()
-            pred_density = ada_model(query_t)
-        else:
-            pred_density = model(query_t)
-        count = pred_density.sum()
+        query_t, query_count, query_density, exemplar_t, exemplar_count, exemplar_density = data
+        #print(query_count)
+        #print(exemplar_count)
+        pred_count = model(query_t)
         query_count = torch.tensor(query_count).cuda()
-        error = np.absolute((count - query_count).detach().cpu().numpy())
+        error = np.absolute((pred_count - query_count).detach().cpu().numpy())
+
         val_error_list.append(error)
         val_RM_error_list.append(error ** 2)
     val_mae = sum(val_error_list) / len(val_error_list)
@@ -205,10 +150,52 @@ for epoch in range(Epoch):
     print('Val RMSE: ', val_rmse)
     TBwriter.add_scalar('val/MAE', val_mae, epoch + 1)
     TBwriter.add_scalar('val/RMSE', val_rmse, epoch + 1)
-    Result[epoch + 1]['val']['MAE'] = train_mae
-    Result[epoch + 1]['val']['RMSE'] = train_rmse
-    scheduler.step()
-#result_conf = OmegaConf.create(Result)
-#Result_save_path = os.path.join(log_save_dir, 'Result.yaml')
-#save_cfg(result_conf, Result_save_path)
+    Result[epoch + 1]['val']['MAE'] = float(val_mae[0])
+    Result[epoch + 1]['val']['RMSE'] = float(val_rmse[0])
+
+model_path = os.path.join(log_save_dir, 'count_model.pth')
+torch.save(model.state_dict(), model_path)
+
+print('Test time adaptation:')
+val_error_list = []
+val_RM_error_list = []
+model.eval()
+for idx, data in enumerate(val_loader):
+
+    query_t, query_count, query_density, exemplar_t, exemplar_count, exemplar_density = data
+
+    ada_model = copy.deepcopy(model)
+    ada_model.train()
+    ada_optimizer = torch.optim.AdamW(ada_model.parameters(), lr = 1e-7)
+    exemplar_count = torch.tensor(exemplar_count).cuda()
+
+    for i in range(10):
+        pred_count = ada_model(exemplar_t)
+        ada_loss = (pred_count - exemplar_count) ** 2
+        # print(ada_loss)
+        ada_optimizer.zero_grad()
+        ada_loss.backward()
+        ada_optimizer.step()
+
+    pred_query_count = ada_model(query_t)
+    query_count = torch.tensor(query_count).cuda()
+    error = np.absolute((pred_query_count - query_count).detach().cpu().numpy())
+    val_error_list.append(error)
+    val_RM_error_list.append(error ** 2)
+
+val_mae = sum(val_error_list) / len(val_error_list)
+val_rmse = np.sqrt(sum(val_RM_error_list) / len(val_RM_error_list))
+print('Adaptation Val MAE: ', val_mae)
+print('Adaptation Val RMSE: ', val_rmse)
+Result['Final adapt MAE'] = float(val_mae[0])
+Result['Adaptation Val RMSE'] = float(val_rmse[0])
+TBwriter.add_scalar('val/Adaptation Val MAE', val_mae, 1)
+TBwriter.add_scalar('val/Adaptation Val RMSE', val_rmse, 1)
+
+result_conf = OmegaConf.create(Result)
+Result_save_path = os.path.join(log_save_dir, 'Result.yaml')
+save_cfg(result_conf, Result_save_path)
+
+#Result_save_path = os.path.join(log_save_dir, 'Result.pth')
 #torch.save(Result, Result_save_path)
+TBwriter.close()
